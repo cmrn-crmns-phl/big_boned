@@ -861,6 +861,14 @@ class Carcass(object):
         self.eating_carcass = 0
 
         self.carcasscolor = Carcass.carcass_colors[random.randrange(0, len(Carcass.carcass_colors))]
+        
+    def decay_equation(n):
+        
+        rep = ( -87/(1+ math.exp(-0.208506*n + 6.1256) ) + 100 )
+
+        # print(rep)
+
+        =return rep/100
 
     def move(self):
         # print("[ carc moving ]")
@@ -869,6 +877,8 @@ class Carcass(object):
         global allfishes, behaviors
 
         state = {}
+        
+        self.energy = self.energy
 
         for carc in allcarcasses:
             for carcass_behavior in carcass_behaviors:
