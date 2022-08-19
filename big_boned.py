@@ -8,22 +8,19 @@ import uuid
 width = 700
 height= 700
 
-# print("[ initializing... ]")
+
 global starttime
 starttime  = datetime.now().replace(microsecond=0)
-# print(starttime)
+
 time.sleep(1)
 
 lap_seconds = datetime.now().replace(microsecond=0)-starttime
-# print("\n[ steppe ]")
+
 global steppe
 steppe = 1
 
 global stamp
 stamp = datetime.now().replace(microsecond=0)
-# print(stamp)
-
-
 
 def round_to_multiple(number, multiple):
     return multiple * round(number / multiple)
@@ -40,22 +37,22 @@ class Behavior(object):
     def __init__(self, **parameters):
         self.parameters = parameters
 
-    def setup(self, fish, carcass, state):
+    def setup(self, carnosaur, carcass, state):
         pass
 
-    def apply(self, fish, state):
+    def apply(self, carnosaur, state):
         pass
 
-    def draw(self, fish, state):
+    def draw(self, carnosaur, state):
         pass
 
 
 class CarcassBehavior(object):
-    print("carcass behavior")
+
     def __init__(self, **parameters):
         self.parameters = parameters
 
-    def setup(self, carcass, fish, state):
+    def setup(self, carcass, carnosaur, state):
         pass
 
     def apply(self, carcass, state):
@@ -64,12 +61,11 @@ class CarcassBehavior(object):
     def draw(self, carcass, state):
         pass
 
-# MoveTowardsCenterOfNearbyFish(closeness=50.0, threshold=25.0, speedfactor=100.0, weight=20.0)
 class PreyBehavior(object):
     def __init__(self, **parameters):
         self.parameters = parameters
 
-    def setup(self, prey, fish, state):
+    def setup(self, prey, carnosaur, state):
         pass
 
     def apply(self, prey, state):
@@ -82,19 +78,17 @@ class PreyBehavior(object):
 
 class MoveTowardsPrey(Behavior):
 
-    def setup(self, fish, prey, state):
+    def setup(self, carnosaur, prey, state):
 
-        # print("[ begin move toward prey ]")
+        print("[ begin move toward prey ]")
 
 
-        if fish is prey:
-
-            # # print" is prey ")
-
+        if carnosaur is prey:
+            
             return
-
+ 
         if "prey_closecount" not in state:
-            # # print"prey closecount")
+        
             state["prey_closecount"]=0.0
 
         if "center" not in state:
@@ -106,9 +100,9 @@ class MoveTowardsPrey(Behavior):
             
             state["closest_carcass"]=[0.0,0.0]
 
-        closeness = fish.binocular_vision[0]
+        closeness = carnosaur.binocular_vision[0]
 
-
+        print("prey_closeness")
 
         for prey in allprey:
 
@@ -116,64 +110,42 @@ class MoveTowardsPrey(Behavior):
 
             prey.position[1] = prey.position[1]
 
-            if in_circle(center_x = prey.position[0], center_y=prey.position[1], radius=closeness, x=fish.position[0], y=fish.position[1]):
+            if in_circle(center_x = prey.position[0], center_y=prey.position[1], radius=closeness, x=carnosaur.position[0], y=carnosaur.position[1]):
 
-                print("[ prey detected! ]")
+        
+                distance_to_prey = dist(prey.position[0], prey.position[1], carnosaur.position[0], carnosaur.position[1])
+                
+                print("prey in range")
 
-                distance_to_prey = dist(prey.position[0], prey.position[1], fish.position[0], fish.position[1])
- 
+                consumption_kg_per_day = carnosaur.tailfat[0]
 
-                if distance_to_prey < closeness:
+                consumpt_step = random.uniform(0.01, 0.08) * consumption_kg_per_day
 
-                    consumption_kg_per_day = fish.tailfat[0]
+                prey.set_attributes(speed=prey.speed*(1+carnosaur.hearing[0]))
+                
+                print("set prey attributes")
 
-                    consumpt_step = random.uniform(0.01, 0.08) * consumption_kg_per_day
+                print(prey)
+                print(carnosaur)
 
-                    prey.set_attributes(speed=prey.speed*(1+fish.hearing[0]))
                     
-                    # print("set prey attributes")
-
-                    # printprey.speed)
-
-                    if state['closecount'] == 0:
-
-                        state['center'] = prey.position
-
-                        state['prey_closecount'] += 1.0
-                        
-                        if random.random()<(.05*(1+fish.bite_force[0])):
-                            print("killed one")
-                            allprey.remove(prey)
-                            el = Carcass()
-                            el.set_attributes(energy=prey.energy,position=prey.position)
-                            allcarcasses.append(Carcass())
-
-                        else:
-                            
-                            continue
-
-                    else:
+                
+                if random.random()<(.05*(1+carnosaur.bite_force[0])):
+                    print("killed one")
+                    print(prey.position)
+                    print(carnosaur.position)
+                    allprey.remove(prey)
+                    el = Carcass()
+                    el.set_attributes(energy=prey.energy,position=prey.position)
+                    allcarcasses.append(el)
 
 
-                        state['center'][0] *= state['prey_closecount']
+                else:
+                
+                    
+                    print("nothing dead")
 
-                        state['center'][1] *= state['prey_closecount']
 
-                        # state['center'][0] += prey.position[0]
-                        # state['center'][1] += prey.position[1]
-
-                        state['center'] = [
-                            state['center'][0] + prey.position[0],
-                            state['center'][1] + prey.position[1]
-                            ]
-
-                        state['prey_closecount'] += 1.0
-
-                        state['center'][0] /= state['prey_closecount']
-
-                        state['center'][1] /= state['prey_closecount']
-
-                    continue
 
             else:
 
@@ -182,140 +154,101 @@ class MoveTowardsPrey(Behavior):
                     prey.direction = random.uniform(-3,3)
 
             if len(allprey)<20:
-                # print("\n\n\n[ you betta prey ]")
+                print("\n\n\n[ you betta prey ]")
 
                 allprey.append(Prey())
 
-    def apply(self, fish, state):
+    def apply(self, carnosaur, state):
+        
 
         if state['prey_closecount'] == 0:
-
-            # # print"--- prey closecount == 0 ---")
 
             return
 
         center = state['center']
 
-        distance_to_center = dist(center[0], center[1],fish.position[0], fish.position[1])
+        distance_to_center = dist(center[0], center[1],carnosaur.position[0], carnosaur.position[1])
 
-        closeness = fish.binocular_vision[0]
+        closeness = carnosaur.binocular_vision[0]
 
         if distance_to_center < closeness:
 
 
 
             angle_to_center = math.atan2(
-                fish.position[1] - center[1],
-                fish.position[0] - center[0]
+                carnosaur.position[1] - center[1],
+                carnosaur.position[0] - center[0]
                 )
 
 
-            fish.turnrate += (angle_to_center - fish.direction) / self.parameters['weight']
+            carnosaur.turnrate += (angle_to_center - carnosaur.direction) / self.parameters['weight']
 
             stroke(200, 200, 255)
 
-            line(fish.position[0], fish.position[1], center[0], center[1])
+            line(carnosaur.position[0], carnosaur.position[1], center[0], center[1])
 
 
 
-    def draw(self, fish, state):
-        # # print"draw")
-        closeness = fish.binocular_vision[0]
-        # # printcloseness)
+    def draw(self, carnosaur, state):
+
+        closeness = carnosaur.binocular_vision[0]
+
 
         stroke(200, 200, 255)
         noFill()
-        ellipse(fish.position[0], fish.position[1], closeness * 2, closeness * 2)
-        #print" --| end move towards prey |--")
+        ellipse(carnosaur.position[0], carnosaur.position[1], closeness * 2, closeness * 2)
+
 
 
 class PreySwim(Behavior):
-    #print("this is preyswim 826")
 
     def setup(self, prey, state):
-        prey.speed = 2.7
+        prey.speed = 3.0
         prey.turnrate = 0
 
 
     def apply(self, prey, state):
-        # Move forward, but not too fast.
+
         if prey.speed > self.parameters['speedlimit']:
             prey.speed = self.parameters['speedlimit']
         prey.position[0] -= math.cos(prey.direction) * prey.speed
         prey.position[1] -= math.sin(prey.direction) * prey.speed
 
-        # Turn, but not too fast.
         if prey.turnrate > self.parameters['turnratelimit']:
             prey.turnrate = self.parameters['turnratelimit']
         if prey.turnrate < -self.parameters['turnratelimit']:
             prey.turnrate = -self.parameters['turnratelimit']
         prey.direction += prey.turnrate
 
-
-        # Fix the angles.
         if prey.direction > math.pi:
             prey.direction -= 2 * math.pi
 
         if prey.direction < -math.pi:
             prey.direction += 2 * math.pi
             
-    def draw(self, fish, state):
-        # print("drawing prey")
-        # print(self.__dict__)
-        # closeness = fish.detection_range[0]
-        # print(closeness)
-        # closeness = self.parameters['closeness']
-        # print(state['closest_carcass'])
+    def draw(self, carnosaur, state):
 
-
-        # print(closest)
-        # print("stroke")
         stroke(200, 200, 255)
-        # print("nofill")
+
         noFill()
-        # print("ellipse")
-        # print(fish)
-        # ellipse(fish.position[0], fish.position[1], closeness * 2, closeness * 2)
-        # print("state")
-        # if closest
-        # line(fish.position[0], fish.position[1], closest[0], closest[1])
-        # print(state)
-        # if state['closecount'] != 0:
-        
-        # closest = state['closest_carcass']
-        # print("closest")
-        # print(closest)
-        # print(closest[0])
-        # if closest[0]!=0:
 
-        #     line(fish.position[0], fish.position[1], closest[0], closest[1])
-
-        # sys.exit()
 
 
 
 class MoveTowardsCarcass(Behavior):
     
-    print("mtc")
 
-    def setup(self, fish, carcass, state):
+    def setup(self, carnosaur, carcass, state):
        
-        print("setup")
+
 
         global starttime
         global stamp
         global lap_seconds
         global steppe
 
-        # print("[ begin move toward carcass 035 ]")
-        # print(fish)
-        # # print(state)
+        if carnosaur is carcass:
 
-        if fish is carcass:
-            # print(" fish is carcass ?")
-            # print(fish)
-            # print(carcass)
-            # sys.exit()
             return
 
 
@@ -324,112 +257,63 @@ class MoveTowardsCarcass(Behavior):
         if 'center' not in state:
             state['center'] = [0.0, 0.0]
 
-        closeness = fish.detection_range[0]
-
-        # print("[ go ]")
+        closeness = carnosaur.detection_range[0]
 
         global eaters
         eaters = list([])
 
         for carcass in allcarcasses:
             global eaters
-           
-            # print("carcasses")
+
 
             carcass.position[0] = carcass.position[0]
             carcass.position[1] = carcass.position[1]
 
-            if in_circle(center_x=fish.position[0], center_y=fish.position[1], radius=closeness, x=carcass.position[0], y=carcass.position[1]):
-
-                el = fish
+            if in_circle(center_x=carnosaur.position[0], center_y=carnosaur.position[1], radius=closeness, x=carcass.position[0], y=carcass.position[1]):
+                print("in circle")
+                el = carnosaur
   
                 eaters.append(el)
  
-                distance_to_carcass = dist(carcass.position[0], carcass.position[1], fish.position[0], fish.position[1])
+                distance_to_carcass = dist(carcass.position[0], carcass.position[1], carnosaur.position[0], carnosaur.position[1])
   
-
+                print(distance_to_carcass)
                 if state['closecount'] == 0:
 
                     state['center'] = carcass.position
                     state['closecount'] =state['closecount']+ 1.0
                     state['closest_carcass'] = carcass.position
 
-                    # # print(state)
+
 
 
 
                     if distance_to_carcass<self.parameters['threshold']:
 
-                        #print("[ allosaur speed 0 ]")
-                        # print(fish.energy)
                         self.eating_carcass = 1.0
 
-#                         # print(fish.detection_range)
-
-#                         # print("[ tailfat ]")
-
-#                         # print(fish.tailfat)
-
-#                         consumption_kg_per_day = fish.tailfat[0]
-#                         consumpt_step = random.uniform(0.01, 0.08) * consumption_kg_per_day
-
-                        fish.speed=0.0
-                        fish.turnrate=0
+                        carnosaur.speed=0.0
+                        carnosaur.turnrate=0
                         
-                        consumpt_step = fish.tailfat[0] * .18  #random.uniform(.009,.022)
+                        consumpt_step = carnosaur.tailfat[0] * .13
 
-                        # print(fish.energy)
+                        carnosaur.energy = carnosaur.energy + consumpt_step
 
-                        fish.energy = fish.energy + consumpt_step
-
-                    
-
-                        # print("[ carcass energy ]")
-
-                        # print(carcass.energy)# # print(
-                        #print(carcass.energy)
+       
                         carcass.energy = carcass.energy - consumpt_step
-                        #print("carcass energy consumed")
-                        #print(carcass.energy)
-                        # sys.exit()
-
-#                         fish.energy = fish.energy+consumpt_step
-#                         # print(fish.energy)
-#                         # print("[ carcass energy ]")
-#                         # print(carcass.energy)
-#                         carcass.energy = carcass.energy-consumpt_step
-#                         # print(carcass.energy)
-#                         # print("[ allosaur energy and detection range ]")
-#                         # print(fish.energy)
-#                         # print(fish.detection_range)
+          
 
                     if distance_to_carcass<10:
-                        # print("[ allosaur energy ]")
-                        # print(fish.energy)
-                        # self.eating_carcass = 1.0
 
-                        # consumption_kg_per_day = fish.tailfat[0]
-                        # consumpt_step = random.uniform(0.01, 0.08) * consumption_kg_per_day
 
-                        fish.speed=0.0
-                        fish.turnrate=0
-
-                        # fish.energy = fish.energy+consumpt_step
-                        # # print(fish.energy)
-                        # # print("[ carcass energy ]")
-                        # # print(carcass.energy)
-                        # carcass.energy = carcass.energy-consumpt_step
-                        # # print(carcass.energy)
-                        # # print(fish.energy)
-                        # sys.exit()
+                        carnosaur.speed=0.0
+                        carnosaur.turnrate=0
 
 
 
                     continue
 
                 else:
-
-                    # print("[ else okay ]")
 
                     state['center'][0] *= state['closecount']
                     state['center'][1] *= state['closecount']
@@ -448,80 +332,52 @@ class MoveTowardsCarcass(Behavior):
 
                     state['closest_carcass'] = carcass.position
 
-                    # print(state)
-
-                    distance_to_carcass = dist(carcass.position[0], carcass.position[1], fish.position[0], fish.position[1])
+                    distance_to_carcass = dist(carcass.position[0], carcass.position[1], carnosaur.position[0], carnosaur.position[1])
 
                     if distance_to_carcass<self.parameters['threshold']:
 
+
                         self.eating_carcass = 1.0
 
 
-                        # consumption_kg_per_day = fish.tailfat[0]
-                        # consumpt_step =  random.uniform(0.08, 0.15) * consumption_kg_per_day
-                        # # consumpt_step = consumption_kg_per_day
+                        carnosaur.speed=0.0
+                        carnosaur.turnrate=0
 
-                        fish.speed=0.0
-                        fish.turnrate=0
-
-                        # fish.energy = fish.energy+consumpt_step
-                        # # # print(fish.energy)
-                        # # print("[ carcass energy ]")
-                        # # print(carcass.energy)
-                        # carcass.energy = carcass.energy-consumpt_step
-                        # # print(carcass.energy)
-                        # # print("[ allosaur energy and detection range ]")
-                        # # print(fish.energy)
-                        # # print(fish.detection_range)
 
                     if distance_to_carcass<10:
-                        # # print("[ allosaur energy ]")
-                        # print(fish.energy)
+                        print("less than 10")
+        
                         self.eating_carcass = 1.0
 
-#                         consumption_kg_per_day = 27
-#                         # consumpt_step =   consumption_kg_per_day
-#                         consumpt_step =  random.uniform(0.05, 0.12) * consumption_kg_per_day
+                        consumption_kg_per_day = carnosaur.tailfat[0] * .13
+                        consumpt_step =   consumption_kg_per_day
 
-                        fish.speed=0.00001
-                        fish.turnrate=0
+                        carnosaur.energy = carnosaur.energy + consumpt_step
 
-#                         fish.energy = fish.energy+consumpt_step
-#                         # print(fish.energy)
-#                         # print("[ carcass energy ]")
-#                         # print(carcass.energy)
-#                         carcass.energy = carcass.energy-consumpt_step
-#                         # print(carcass.energy)
+                        carcass.energy = carcass.energy - consumpt_step
+                        carnosaur.speed=0.00001
+                        carnosaur.turnrate=0
+
+                        print("[ carcass energy ]")
+
+                        print(carcass.energy)
 
 
 
                     continue
             else:
                
-                # print("else 274")
 
                 if random.random() > .995:
 
-                    fish.direction = random.uniform(-3,3)
+                    carnosaur.direction = random.uniform(-3,3)
                     
-                if (1 < steppe <90) or (180<steppe<270) or (320<steppe<365):
+                if (1 < steppe <90) or (180<steppe<270) or (340<steppe<420) or (510<steppe<600) or (690<steppe<730):
 
                     if len(allcarcasses) < 5:
-
-                            # set max carcasses to 5?
-                            # use the alaskan paper about wolf scavenging to support number of carcasses per sqkm in low yield season
-
                         
                         allcarcasses.append(Carcass())
-                        
-                    if len(allcarcasses) < 3:
-                        if random.random() > .995:
-
-                            # set max carcasses to 5?
-                            # use the alaskan paper about wolf scavenging to support number of carcasses per sqkm in low yield season
-
-                            allcarcasses.append(Carcass())
-
+                    
 
 
             lap = datetime.now() - stamp
@@ -532,103 +388,76 @@ class MoveTowardsCarcass(Behavior):
 
                 steppe = steppe+1
 
-                if len(allfishes)<30:
+                if len(allcarnosaurs)<30:
 
-                    for fish in allfishes:
-                        fish.direction = random.uniform(-3,3)
+                    for carnosaur in allcarnosaurs:
+                        carnosaur.direction = random.uniform(-3,3)
                     
-                        if fish.energy<6900:
+                        if carnosaur.energy<6900:
 
-                            allfishes.remove(fish)
+                            allcarnosaurs.remove(carnosaur)
 
-                        # print("\n step")
-                        # print(fish)
-                        # print(fish.energy)
-                        mass = fish.energy/3.75
+                        mass = .energy/3.75
 
-                        fish.energy = fish.energy - .161*(mass**.682)
+                        .energy = .energy - .161*(mass**.682)
 
-                        # print(steppe)
-
-                        # print("lap")
-
-                        # print(lap)
-
-                        # print("lap seconds")
-
-                        # print(lap_seconds)
 
                         if random.random()<.02:
 
-                            # print("[ population ]")
+                            xlr = Carnosaur()
+                    
 
-                            # print(len(allfishes))
-
-
-                            xlr = Fish()
-                        
-                            # print("[ new allosaur ]")
-                        
-                            # print(xlr)
-
-                            xlr.set_attributes(dominance=fish.dominance,
-                                                        tailfat=fish.tailfat,
-                                                            detection_range=fish.detection_range,
-                                                        bite_force=fish.bite_force,
-                                                        binocular_vision=fish.binocular_vision,
-                                                        hearing=fish.hearing,
-                                                        parent = fish.idd,
+                            xlr.set_attributes(dominance=carnosaur.dominance,
+                                                        tailfat=carnosaur.tailfat,
+                                                            detection_range=carnosaur.detection_range,
+                                                        bite_force=carnosaur.bite_force,
+                                                        binocular_vision=carnosaur.binocular_vision,
+                                                        hearing=carnosaur.hearing,
+                                                        parent = carnosaur.idd,
                                                         idd = "")
 
 
-                            allfishes.append(xlr)
-
-                            # print("[ reproduced! ]")
+                            allcarnosaurs.append(xlr)
 
 
                 if len(eaters)>0:
-                    #print("eaters")
 
-                    for fish in eaters:
+                    for carnosaur in eaters:
                        
-                        distance_to_carcass = dist(carcass.position[0], carcass.position[1], fish.position[0], fish.position[1])
+                        distance_to_carcass = dist(carcass.position[0], carcass.position[1], carnosaur.position[0], carnosaur.position[1])
                         
-                        #print(distance_to_carcass)
-                        #print(fish.position)
-                        #print(carcass.position)
-                        #print(closeness)
-                       
                         if closeness<distance_to_carcass:
                             
-                            if in_circle(center_x=fish.position[0], center_y=fish.position[1], radius=closeness, x=carcass.position[0], y=carcass.position[1]):
+                            if in_circle(center_x=carnosaur.position[0], center_y=carnosaur.position[1], radius=closeness, x=carcass.position[0], y=carcass.position[1]):
                            
-                                consumpt_step = fish.tailfat[0] * .0042 #random.uniform(.009,.022)
+                                consumpt_step = carnosaur.tailfat[0] * .0042 #random.uniform(.009,.022)
     
-                                fish.speed=0.0
+                                carnosaur.speed=0.0
     
-                                fish.turnrate=0
+                                carnosaur.turnrate=0
                             
-                                fish.energy = fish.energy + consumpt_step
+                                carnosaur.energy = carnosaur.energy + consumpt_step
 
                                 carcass.energy = carcass.energy - consumpt_step
             
-                        # # print(carcass.energy)
-
-                        # # print(fish.energy)
-                        # sys.exit()
 
 
-                if steppe>365:
+                if steppe>730:
 
                     sys.exit()
 
                 if len(allcarcasses)>=4:
+                    
                     if random.random()<0.000025:
 
                         allcarcasses.remove(allcarcasses[0])
 
 
-    def apply(self, fish, state):
+    def apply(self, carnosaur, state):
+        # print("apply")
+        
+        if len(state)<1:
+            return
 
         if state['closecount'] == 0:
 
@@ -638,66 +467,51 @@ class MoveTowardsCarcass(Behavior):
 
         distance_to_center = dist(
             center[0], center[1],
-            fish.position[0], fish.position[1]
+            carnosaur.position[0], carnosaur.position[1]
             )
 
-        # # print("[ distance to center of carcass ]")
 
-        # # print(distance_to_center)
-       
-        # # print(fish.detection_range[0])
-
-        closeness = fish.detection_range[0]
+        closeness = carnosaur.detection_range[0]
 
         if distance_to_center < closeness:
-            # # print("in range!")
-        # if distance_to_center < self.parameters['threshold']:
-            angle_to_center = math.atan2(
-                fish.position[1] - center[1],
-                fish.position[0] - center[0]
-                )
-            # # print("[ angle to center ]")
-            # # print(angle_to_center)
-            fish.turnrate=random.uniform(0,0.0001)
-            fish.speed=0.002
-            # fish.direction=random.uniform(-2,2)
 
-            fish.turnrate += (angle_to_center - fish.direction) / self.parameters['weight']
-            # # print(fish.turnrate)
-            # set fish direction to be toward center at as long as in sauropod carcass
+            angle_to_center = math.atan2(
+                carnosaur.position[1] - center[1],
+                carnosaur.position[0] - center[0]
+                )
+
+            carnosaur.turnrate=random.uniform(0,0.0001)
+            carnosaur.speed=0.002
+
+
+            carnosaur.turnrate += (angle_to_center - carnosaur.direction) / self.parameters['weight']
 
             stroke(200, 200, 255)
-            line(fish.position[0], fish.position[1], center[0], center[1])
+            line(carnosaur.position[0], carnosaur.position[1], center[0], center[1])
 
 
 
 
-    def draw(self, fish, state):
-        closeness = fish.detection_range[0]
-        # closeness = self.parameters['closeness']
-        # closest = state['closest_carcass']
+    def draw(self, carnosaur, state):
+        closeness = carnosaur.detection_range[0]
+
         stroke(200, 200, 255)
         noFill()
-        ellipse(fish.position[0], fish.position[1], closeness * 2, closeness * 2)
-        # line(fish.position[0], fish.position[1], closest[0], closest[1])
-
-        # stroke(100, 255, 100)
-        # noFill()
-        #
+        ellipse(carnosaur.position[0], carnosaur.position[1], closeness * 2, closeness * 2)
 
 
-
-
-
-
-# MoveTowardsCenterOfNearbyFish(closeness=50.0, threshold=25.0, speedfactor=100.0, weight=20.0)
-class MoveTowardsCenterOfNearbyFish(Behavior):
+class MoveTowardsCenterOfNearbyCarnosaur(Behavior):
     
-    def setup(self, fish, otherfish, state):
+    def setup(self, carnosaur, othercarnosaur, state):
+        print("setup 645")
         
-        if fish is otherfish:
-
+        if carnosaur is othercarnosaur:
             return
+        
+        if len(state)<1:
+            print("line 646 state <1")
+            state["closecount"]=0.0
+            print(state)
         
         if 'closecount' not in state:
             state['closecount'] = 0.0
@@ -707,26 +521,22 @@ class MoveTowardsCenterOfNearbyFish(Behavior):
 
         closeness = self.parameters['closeness']
         
-        distance_to_otherfish = dist(
-            otherfish.position[0], otherfish.position[1],
-            fish.position[0], fish.position[1]
+        distance_to_othercarnosaur = dist(
+            othercarnosaur.position[0], othercarnosaur.position[1],
+            carnosaur.position[0], carnosaur.position[1]
             )
 
-        # if fish.eating_carcass==0:
-        # 122
-        if distance_to_otherfish < closeness:
+        if distance_to_othercarnosaur < closeness:
             if state['closecount'] == 0:
-                state['center'] = otherfish.position
+                state['center'] = othercarnosaur.position
                 state['closecount'] += 0.0
             else:
                 state['center'][0] *= state['closecount']
                 state['center'][1] *= state['closecount']
 
-                # state['center'][0] += otherfish.position[0]
-                # state['center'][1] += otherfish.position[1]
                 state['center'] = [
-                    state['center'][0] + otherfish.position[0],
-                    state['center'][1] + otherfish.position[1]
+                    state['center'][0] + othercarnosaur.position[0],
+                    state['center'][1] + othercarnosaur.position[1]
                     ]
 
                 state['closecount'] += 0.0
@@ -734,8 +544,13 @@ class MoveTowardsCenterOfNearbyFish(Behavior):
                 state['center'][0] /= state['closecount']
                 state['center'][1] /= state['closecount']
 
-    def apply(self, fish, state):
+    def apply(self, carnosaur, state):
         
+        if len(state)<1:
+            print("line 688 state <1")
+            state["closecount"]=0.0
+            print(state)
+            
         if state['closecount'] == 0:
             
             return
@@ -744,103 +559,99 @@ class MoveTowardsCenterOfNearbyFish(Behavior):
         
         distance_to_center = dist(
             center[0], center[1],
-            fish.position[0], fish.position[1]
+            carnosaur.position[0], carnosaur.position[1]
             )
 
         if distance_to_center > self.parameters['threshold']:
             angle_to_center = math.atan2(
-                fish.position[1] - center[1],
-                fish.position[0] - center[0]
+                carnosaur.position[1] - center[1],
+                carnosaur.position[0] - center[0]
                 )
-            # fish.turnrate += (angle_to_center - fish.direction) / self.parameters['weight']
-            # fish.speed += distance_to_center / self.parameters['speedfactor']
 
 
-    def draw(self, fish, state):
+    def draw(self, carnosaur, state):
         closeness = self.parameters['closeness']
         stroke(200, 200, 255)
         noFill()
-        ellipse(fish.position[0], fish.position[1], closeness * 2, closeness * 2)
+        ellipse(carnosaur.position[0], carnosaur.position[1], closeness * 2, closeness * 2)
 
 
 
-class TurnAwayFromClosestFish(Behavior):
+class TurnAwayFromClosestCarnosaur(Behavior):
     
     
-    
-    def setup(self, fish, otherfish, state):
-        if fish is otherfish:
+    def setup(self, carnosaur, othercarnosaur, state):
+        if carnosaur is othercarnosaur:
             return
         
-        if 'closest_fish' not in state:
-            state['closest_fish'] = None
-        if 'distance_to_closest_fish' not in state:
-            state['distance_to_closest_fish'] = 1000000
+        if 'closest_carnosaur' not in state:
+            state['closest_carnosaur'] = None
+        if 'distance_to_closest_carnosaur' not in state:
+            state['distance_to_closest_carnosaur'] = 1000000
 
-        distance_to_otherfish = dist(
-            otherfish.position[0], otherfish.position[1],
-            fish.position[0], fish.position[1]
+        distance_to_othercarnosaur = dist(
+            othercarnosaur.position[0], othercarnosaur.position[1],
+            carnosaur.position[0], carnosaur.position[1]
             )
-        print("distance to other fish")
-        print(distance_to_otherfish)
-        if distance_to_otherfish < state['distance_to_closest_fish']:
-            state['distance_to_closest_fish'] = distance_to_otherfish
-            state['closest_fish'] = otherfish
+        print("distance to other carnosaur")
+        print(distance_to_othercarnosaur)
+        if distance_to_othercarnosaur < state['distance_to_closest_carnosaur']:
+            state['distance_to_closest_carnosaur'] = distance_to_othercarnosaur
+            state['closest_carnosaur'] = othercarnosaur
 
-    def apply(self, fish, state):
-        print("turn away")
-        closest_fish = state['closest_fish']
-        if closest_fish is None:
+    def apply(self, carnosaur, state):
+        print("applying")
+        closest_carnosaur = state['closest_carnosaur']
+        if closest_carnosaur is None:
             return
 
-        distance_to_closest_fish = state['distance_to_closest_fish']
-        print("distance to closest fish")
-        if distance_to_closest_fish < self.parameters['threshold']:
-            if otherfish.dominance > fish.dominance:
+        distance_to_closest_carnosaur = state['distance_to_closest_carnosaur']
+        print("distance to closest carnosaur")
+        if distance_to_closest_carnosaur < self.parameters['threshold']:
+            if othercarnosaur.dominance > carnosaur.dominance:
                 print("dominated!")
-                angle_to_closest_fish = math.atan2(
-                    fish.position[1] - closest_fish.position[1],
-                    fish.position[0] - closest_fish.position[0]
+                angle_to_closest_carnosaur = math.atan2(
+                    carnosaur.position[1] - closest_carnosaur.position[1],
+                    carnosaur.position[0] - closest_carnosaur.position[0]
                     )
-                fish.turnrate -= (angle_to_closest_fish - fish.direction) / self.parameters['weight']
-                fish.speed += self.parameters['speedfactor'] / distance_to_closest_fish
+                carnosaur.turnrate -= (angle_to_closest_carnosaur - carnosaur.direction) / self.parameters['weight']
+                carnosaur.speed += self.parameters['speedfactor'] / distance_to_closest_carnosaur
 
-    def draw(self, fish, state):
+    def draw(self, carnosaur, state):
         stroke(100, 255, 100)
-        closest = state['closest_fish']
-        # line(fish.position[0], fish.position[1], closest.position[0], closest.position[1])
-
+        closest = state['closest_carnosaur']
+  
 
 class TurnToAverageDirection(Behavior):
-    def setup(self, fish, otherfish, state):
-        if fish is otherfish:
+    def setup(self, carnosaur, othercarnosaur, state):
+        if carnosaur is othercarnosaur:
             return
         if 'average_direction' not in state:
             state['average_direction'] = 0.0
         if 'closecount_for_avg' not in state:
             state['closecount_for_avg'] = 0.0
 
-        distance_to_otherfish = dist(
-            otherfish.position[0], otherfish.position[1],
-            fish.position[0], fish.position[1]
+        distance_to_othercarnosaur = dist(
+            othercarnosaur.position[0], othercarnosaur.position[1],
+            carnosaur.position[0], carnosaur.position[1]
             )
 
         closeness = self.parameters['closeness']
-        if distance_to_otherfish < closeness:
+        if distance_to_othercarnosaur < closeness:
             if state['closecount_for_avg'] == 0:
-                state['average_direction'] = otherfish.direction + random.uniform(0,0.6)
+                state['average_direction'] = othercarnosaur.direction + random.uniform(0,0.6)
                 state['closecount_for_avg'] += 1.0
             else:
                 state['average_direction'] *= state['closecount_for_avg']
-                state['average_direction'] += otherfish.direction  + random.uniform(0,0.6)
+                state['average_direction'] += othercarnosaur.direction  + random.uniform(0,0.6)
                 state['closecount_for_avg'] += 1.0
                 state['average_direction'] /= state['closecount_for_avg']
 
-    def apply(self, fish, state):
+    def apply(self, carnosaur, state):
         if state['closecount_for_avg'] == 0:
             return
         average_direction = state['average_direction']
-        fish.turnrate += (average_direction - fish.direction) / self.parameters['weight']
+        carnosaur.turnrate += (average_direction - carnosaur.direction) / self.parameters['weight']
 
 
 class Swim(Behavior):
@@ -849,81 +660,67 @@ class Swim(Behavior):
     print("swimming")
 
 
-    def setup(self, fish, otherfish, state):
+    def setup(self, carnosaur, othercarnosaur, state):
         global lap_seconds
         global steppe
 
         global starttime
         global stamp
 
-        fish.speed = 1.7
-        fish.turnrate = 0
+        carnosaur.speed = 1.7
+        carnosaur.turnrate = 0
 
         lap = datetime.now().replace(microsecond=0) - stamp
        
-        if steppe>600:
+        if steppe>730:
             print("done complete, --0098")
            
             sys.exit()
         else:
             print("Running")
             print(steppe)
-        # print(fish)
-        # print(otherfish)
-        # print(state)
-        # print(fish.__dict__)
- 
 
-    def apply(self, fish, state):
+    def apply(self, carnosaur, state):
 
         print("apply")
         # Move forward, but not too fast.
-        if fish.speed > self.parameters['speedlimit']:
-            fish.speed = self.parameters['speedlimit']
-        fish.position[0] -= math.cos(fish.direction) * fish.speed
-        fish.position[1] -= math.sin(fish.direction) * fish.speed
+        if carnosaur.speed > self.parameters['speedlimit']:
+            carnosaur.speed = self.parameters['speedlimit']
+        carnosaur.position[0] -= math.cos(carnosaur.direction) * carnosaur.speed
+        carnosaur.position[1] -= math.sin(carnosaur.direction) * carnosaur.speed
 
         # Turn, but not too fast.
-        if fish.turnrate > self.parameters['turnratelimit']:
-            fish.turnrate = self.parameters['turnratelimit']
-        if fish.turnrate < -self.parameters['turnratelimit']:
-            fish.turnrate = -self.parameters['turnratelimit']
-        fish.direction += fish.turnrate
+        if carnosaur.turnrate > self.parameters['turnratelimit']:
+            carnosaur.turnrate = self.parameters['turnratelimit']
+        if carnosaur.turnrate < -self.parameters['turnratelimit']:
+            carnosaur.turnrate = -self.parameters['turnratelimit']
+        carnosaur.direction += carnosaur.turnrate
 
 
         # Fix the angles.
-        if fish.direction > math.pi:
-            fish.direction -= 2 * math.pi
+        if carnosaur.direction > math.pi:
+            carnosaur.direction -= 2 * math.pi
 
-        if fish.direction < -math.pi:
-            fish.direction += 2 * math.pi
-           
-        print(" 01-24")
-
-
-
-
-
-
-
-
+        if carnosaur.direction < -math.pi:
+            carnosaur.direction += 2 * math.pi
+        
 
 class WrapAroundWindowEdges(Behavior):
-    def apply(self, fish, state):
-        if fish.position[0] > width:
-            fish.position[0] = 0
-        if fish.position[0] < 0:
-            fish.position[0] = width
-        if fish.position[1] > height:
-            fish.position[1] = 0
-        if fish.position[1] < 0:
-            fish.position[1] = height
+    def apply(self, carnosaur, state):
+        if carnosaur.position[0] > width:
+            carnosaur.position[0] = 0
+        if carnosaur.position[0] < 0:
+            carnosaur.position[0] = width
+        if carnosaur.position[1] > height:
+            carnosaur.position[1] = 0
+        if carnosaur.position[1] < 0:
+            carnosaur.position[1] = height
 
 
 def setup():
     # size(800, 400)
     size(700,700)
-    number_of_fish = 12
+    number_of_carnosaur = 12
     number_of_carcasses= 5
     number_of_prey = 16
 
@@ -931,10 +728,9 @@ def setup():
 
     behaviors = (
         MoveTowardsCarcass(closeness=75.0, threshold=75.0, speedfactor=100.0, weight=10.0),
-        MoveTowardsCenterOfNearbyFish(closeness=0.5, threshold=.50, speedfactor=20.0, weight=20.0),
+        MoveTowardsCenterOfNearbyCarnosaur(closeness=0.5, threshold=.50, speedfactor=20.0, weight=20.0),
         MoveTowardsPrey(closeness=10, threshhold=.5, speedfactor=20.0, weight=20.0),
-        TurnAwayFromClosestFish(threshold=0.3, speedfactor=4.0, weight=20.0),
-        # TurnToAverageDirection(closeness=0.3, weight=6.0),
+        TurnAwayFromClosestCarnosaur(threshold=0.3, speedfactor=4.0, weight=20.0),
         Swim(speedlimit=2.0, turnratelimit=math.pi / 10.0),
         
         WrapAroundWindowEdges(),
@@ -948,11 +744,11 @@ def setup():
 
 
 
-    global allfishes
-    allfishes = []
-    for i in xrange(0, number_of_fish):
+    global allcarnosaurs
+    allcarnosaurs = []
+    for i in xrange(0, number_of_carnosaur):
 
-        allfishes.append(Fish())
+        allcarnosaurs.append(Carnosaur())
         # # print("[ allosaur created ]")
 
 
@@ -985,9 +781,9 @@ def setup():
 def draw():
 
     background(24)
-    for fish in allfishes:
-        fish.move()
-        fish.draw()
+    for carnosaur in allcarnosaurs:
+        carnosaur.move()
+        carnosaur.draw()
 
     for carc in allcarcasses:
         carc.draw()
@@ -997,8 +793,8 @@ def draw():
         prey.draw()
 
 
-class Fish(object):
-    fishcolors = (
+class Carnosaur(object):
+    carnosaurcolors = (
         color(255, 145, 8),
         color(219, 69, 79),
         color(255)
@@ -1011,20 +807,15 @@ class Fish(object):
         self.direction = random.random() * 2.0 * math.pi - math.pi
         self.turnrate = 0
 
-        self.fishcolor = Fish.fishcolors[random.randrange(0, len(Fish.fishcolors))]
+        self.carnosaurcolor = carnosaur.carnosaurcolors[random.randrange(0, len(Carnosaur.carnosaurcolors))]
 
         self.energy = 7500
        
         self.parent = ""
         self.idd = uuid.uuid4()
 
-
-        # 7500 energy = 2000 kg = 3.5x
-        # tailfat determines how much energy above 7500 the animal can store
-        # but the more energy stored, the more the animal costs, it gets more expensive as it gets fatter
-        # and maybe slower also!
-
         li = ["extra_small","small","medium","big","extra_big"]
+        # li = ["big"]
 
 
         advgs =  {"extra_small"    :[-.5,-.3]
@@ -1045,7 +836,6 @@ class Fish(object):
             s = [ random.uniform(advgs[t][0], advgs[t][1]), t ]
             chc.append(s)
 
-        # # print(chc)
 
         self.dominance        = random.choice(chc)
 
@@ -1057,15 +847,12 @@ class Fish(object):
 
             t = random.choice(li)
             phen = random.uniform(advgs[t][0], advgs[t][1])
-            # # print(phen)
-            # [ 50*(1+phen), phen , reproduce ]
+
             self.tailfat          = [38*(1+phen), phen, t]
 
             sn = random.choice(li)
             phen = random.uniform(advgs[sn][0], advgs[sn][1])
             
-            # self.detection_range  = [round_to_multiple(50*(1+phen), 10), phen, sn]
-
             self.detection_range  = [50*(1+phen), phen, sn]
            
             snn = random.choice(li)
@@ -1074,26 +861,6 @@ class Fish(object):
 
             self.binocular_vision = [5*(1+phen), phen, snn]
 
-        # # print("[ initialized allosaur ]")
-        # # print(self.hearing)
-        # # print(self.detection_range)
-
-
-
-        # https://stackoverflow.com/questions/52285104/3d-scatterplots-in-python-with-hue-colormap-and-legend
-
-        # z axis (up and down) should be magnitude of trait ? up to 100% the highest it can be?
-        # i don't know how to organize this yet
-        # x must be the -1.5 to +1.5 magnitude
-
-        # i will do ectotherm, mesotherm, endotherm
-
-
-        # bears gain 180 kg of fat during hyperphagia before hibernation
-        # how much fat is stored in the body, how much in the tail? use boht, one fills up then the other, first body then tail
-        # it must be a hereditary thing with a variable ; genotype aa = between 4 and 6, genotype bb is between 4.3 and 6.4
-        # and this variable is also variable to replicate selective pressure
-
     def set_attributes(self, dominance,tailfat, hearing, detection_range, bite_force, binocular_vision, parent, idd):
         reprod = {  "extra_small":["extra_small","small","small"]
                   , "small":      ["extra_small","small","medium"]
@@ -1101,7 +868,6 @@ class Fish(object):
                   , "big":        ["medium","big","extra_big"]
                   , "extra_big":  ["big","big","extra_big"] }
 
-        # print("[ setting traits: ]")
 
         traits = [(self.dominance, "dominance")
                 , (self.detection_range,"detection_range")
@@ -1125,12 +891,6 @@ class Fish(object):
                              , "binocular_vision":binocular_vision
                              ,"hearing":hearing}
 
-        # advantage_factors = {"extra_small" :[-.167,0]
-        #                      ,"small"      :[0,.167]
-        #                      ,"medium"     :[0,.5]
-        #                      , "big"       :[.334,.5]
-        #                      , "extra_big" :[.5,5.167]}
-
         advantage_factors =  {"extra_small" :[-.7,-.35]
                               ,"small"      :[-.35,-.1]
                               ,"medium"     :[-.1,.1]
@@ -1146,79 +906,32 @@ class Fish(object):
 
             if ait == "tailfat":
 
-                # print("[ --tailfat-- ]")
-
-                # # print(self.tailfat)
-
-                # # print(self.tailfat[0])
-
-                # # print("[ --choices-- ]")
-
                 choices = reprod[self.tailfat[2]]
-
-                # print(choices)
 
                 shoyces = sum([[element] * int(weight * 100)for element, weight in zip(choices, items_probability)], [])
                
                 reproduce = random.choice(shoyces)
 
-                # print(reproduce)
-
                 phen = random.uniform( advantage_factors[reproduce][0], advantage_factors[reproduce][1] )
-
-                # # print(phen)
-
-                # self.tailfat affects how much food the animal can eat/store per day when on a carcass
 
                 self.tailfat = [ 38*(1+phen), phen , reproduce ]
 
-                # # print(self.tailfat)
-
-                # # print("\n")
-
-                # # # print(self.detection_range)
-
             if ait == "hearing":
-
-                # print("[ --hearing-- ]")
-
-                # # print(self.hearing)
-                # self.hearing = self.hearing
-
-                # # print("[ --choices-- ]")
 
                 choices = reprod[self.hearing[1]]
 
-                # print(choices)
                 items_probability = [0.1, 0.8, 0.1]
 
                 shoyces = sum([[element] * int(weight * 100)for element, weight in zip(choices, items_probability)], [])
                
                 reproduce = random.choice(shoyces)
-
-                # # print("[ --hearing-- ]")
-
-                # # print(hearing)
 
                 self.hearing =  [ random.uniform( advantage_factors[reproduce][0], advantage_factors[reproduce][1] ) , reproduce ]
 
-                # # print(self.hearing)
-
             if ait == "dominance":
 
-                # print("[ --dominance-- ]")
-
-                # # print(self.dominance)
-                # self.dominance = self.dominance[0]
-
-                # # print(self.dominance[0])
-
-                # # print("[ --choices-- ]")
-
                 choices = reprod[self.dominance[1]]
-                # # print(sys.version)
 
-                # print(choices)
                 items_probability = [0.1, 0.8, 0.1]
                
                
@@ -1226,80 +939,33 @@ class Fish(object):
                 shoyces = sum([[element] * int(weight * 100)for element, weight in zip(choices, items_probability)], [])
                
                 reproduce = random.choice(shoyces)
-                # print(reproduce)
-
-                # reproduce = random.choices(population=choices,weights=[0.1,0.8,0.1],k=1)[0]
-
-                # print("[ --reproduce-- ]")
-
-                # # print(reproduce)
-
-                # # print("[ advantage factors ]")
-
-                # # print(advantage_factors[reproduce][0])
-                # # print(advantage_factors[reproduce][1])
 
                 phen = random.uniform( advantage_factors[reproduce][0], advantage_factors[reproduce][1] )
 
-                # # print(reproduce)
-
-                # # print(phen)
 
                 self.dominance =  [ phen , reproduce ]
 
-                # # print(self.dominance)
 
             if ait=="detection_range":
 
-                # print("[ --detection_range-- ]")
-
-                # # print(self.detection_range)
-
-                # # print("[ --choices-- ]")
-
                 choices = reprod[self.detection_range[2]]
                 items_probability = [0.1, 0.8, 0.1]
-
-                # print(choices)
                
                 shoyces = sum([[element] * int(weight * 100)for element, weight in zip(choices, items_probability)], [])
                
                 reproduce = random.choice(shoyces)
-               
-                # print(reproduce)
-         
-
-                # # print("[ --detection phen-- ]")
-
-                # # # print(reproduce)
 
                 phen = random.uniform( advantage_factors[reproduce][0], advantage_factors[reproduce][1] )
 
-                # # print(phen)
 
                 self.detection_range =  [ 50*(1+phen), phen , reproduce ]
 
-                # # print(self.detection_range)
-
-                # # print("\n")
-
-                # # # print(self.detection_range)
 
             if ait=="bite_force":
-
-                # print("[ --bite_force-- ]")
-
-                # self.bite_force = self.bite_force[0]
-
-                # # print(self.bite_force)
-
-                # # print("[ --choices-- ]")
 
                 choices = reprod[self.bite_force[1]]
                
                 items_probability = [0.1, 0.8, 0.1]
-
-                # print(choices)
                
                 shoyces = sum([[element] * int(weight * 100)for element, weight in zip(choices, items_probability)], [])
                
@@ -1308,41 +974,23 @@ class Fish(object):
 
                 self.bite_force = [ random.uniform( advantage_factors[reproduce][0], advantage_factors[reproduce][1] ) , reproduce ]
 
-                # # # print(self.bite_force)
-
             if ait=="binocular_vision":
 
-                # print("[ --binocular_vision-- ]")
-
-                # self.binocular_vision = self.binocular_vision[0]
-
-                # # print(self.binocular_vision)
-
-                # print("[ --choices-- ]")
-
                 choices = reprod[self.binocular_vision[2]]
-
-                # print(choices)
 
                 shoyces = sum([[element] * int(weight * 100)for element, weight in zip(choices, items_probability)], [])
                
                 reproduce = random.choice(shoyces)
 
-                # print("[ --reproduce-- ]")
-
-                # # print(reproduce)
-
                 phen = random.uniform( advantage_factors[reproduce][0], advantage_factors[reproduce][1] )
 
                 self.binocular_vision = [ 5*(1+phen) , phen ,reproduce ]
-
-                # # print(self.binocular_vision)
 
 
 
     def move(self):
 
-        global allfishes, behaviors
+        global allcarnosaures, behaviors
 
         global allcarcasses, carcass_behaviors
         
@@ -1352,32 +1000,27 @@ class Fish(object):
 
         state = {}
 
-        # print("[ move step ]")
-        # # print(steppe)
 
-
-        for fish in allfishes:
+        for carnosaur in allcarnosaurs:
 
             now = datetime.now()
 
             now = now.strftime("%H:%M:%S,%f")
 
-            # # print(vars(fish))
-
-            dct = [{"dominance":fish.dominance # affects how other individuals react at carcass sites
-                    , "detection_range":fish.detection_range # affects distance they can smell dead bodies
-                    ,"tailfat":fish.tailfat # affects consumption rate * 27 or 1.5x of fmr -- i want it to also be how much ta?x free energy they can store
-                    , "bite_force":fish.bite_force # affects predator success because it is power
-                    , "binocular_vision":fish.binocular_vision # binocular_vision affects predator detection radius
-                    ,"hearing":fish.hearing # hearing affects predator success b/c stealth
-                    ,"id" : fish #fish object id
-                    ,"energy":fish.energy #how much energy the agent has
+            dct = [{"dominance":carnosaur.dominance # affects how other individuals react at carcass sites
+                    , "detection_range":carnosaur.detection_range # affects distance they can smell dead bodies
+                    ,"tailfat":carnosaur.tailfat # affects consumption rate * 27 or 1.5x of fmr -- i want it to also be how much ta?x free energy they can store
+                    , "bite_force":carnosaur.bite_force # affects predator success because it is power
+                    , "binocular_vision":carnosaur.binocular_vision # binocular_vision affects predator detection radius
+                    ,"hearing":carnosaur.hearing # hearing affects predator success b/c stealth
+                    ,"id" : carnosaur #carnosaur object id
+                    ,"energy":carnosaur.energy #how much energy the agent has
                     ,"timestamp":now
-                    ,"allosaur_population":str(len(allfishes))
+                    ,"allosaur_population":str(len(allcarnosaurs))
                     ,"sauropod_carcasses":str(len(allcarcasses))
                     ,"steppe":steppe
-                    ,"parent":fish.parent
-                    ,"idd":fish.idd}]
+                    ,"parent":carnosaur.parent
+                    ,"idd":carnosaur.idd}]
 
             with open("big_boned_data.csv", "a") as csvfile:
                 # # print("[ writing data... ]")
@@ -1397,20 +1040,20 @@ class Fish(object):
                                                             ,"parent"
                                                             ,"idd"])
 
-                # writer.writeheader()
+  
 
 
 
                 writer.writerows(dct)
 
 
-            if fish.energy<6900:
+            if carnosaur.energy<6900:
 
-                allfishes.remove(fish)
+                allcarnosaurs.remove(carnosaur)
                
-            if len(allfishes)>30:
-                # allfishes = allfishes.pop(0)
-                allfishes.remove(allfishes[0])
+            if len(allcarnosaurs)>30:
+                # allcarnosaurs = allcarnosaurs.pop(0)
+                allcarnosaurs.remove(allcarnosaurs[0])
 
 
 
@@ -1419,19 +1062,16 @@ class Fish(object):
             if carc.energy<carc.energy*.2:
                 allcarcasses.remove(carc)
 
-        for fish in allfishes:
-            print(fish)
+        for carnosaur in allcarnosaurs:
+            # print()
             for behavior in behaviors:
-                print(behavior)
-                behavior.setup(self, fish, state)
-                print("setup done")
+
+                behavior.setup(self, carnosaur, state)
+
 
         for behavior in behaviors:
-            print("new beh")
-            print(behavior)
-            
             behavior.apply(self, state)
-            print("new apply")
+            # print("new apply")
             behavior.draw(self, state)
         # output.close()
 
@@ -1441,7 +1081,7 @@ class Fish(object):
         translate(*self.position)
         rotate(self.direction)
 
-        stroke(self.fishcolor)
+        stroke(self.carnosaurcolor)
         noFill()
         lengt = self.energy/7500
         lengt = round(lengt,2)
@@ -1449,13 +1089,6 @@ class Fish(object):
         # print("drawing line 09876")
         lengt = lengt*20
         line(0,22, lengt,22)
-        # print("drawing line")
-       
- 
-
-        # if lengt >1:
-            # stroke("#FF007F")
-            # line(20,0,lengt*20,0)
 
         # lower jaw
         line(0.28, 16.36, 7.16, 15.40)
@@ -1547,7 +1180,7 @@ class Carcass(object):
         # # print("[ carc moving ]")
 
         global allcarcasses, carcass_behaviors
-        global allfishes, behaviors
+        global allcarnosaurs, behaviors
 
         state = {}
 
@@ -1637,7 +1270,7 @@ class Prey(object):
     def __init__(self):
         self.position = [random.randrange(0, width), random.randrange(0, height)]
         # # printself.position)
-        self.speed = 2.7
+        self.speed = 3.0
         self.direction = random.random() * 2.0 * math.pi - math.pi
         self.turnrate = 0.5
         self.energy = 2000 # prey energy must be calories available, not life energy, because prey won't metabolize
@@ -1647,7 +1280,7 @@ class Prey(object):
 
 
     def set_attributes(self, speed):
-        # print"[ prey slowed down ]")
+
 
         self.speed = speed
 
@@ -1660,7 +1293,7 @@ class Prey(object):
 
         # print("[ prey move ]")
 
-        global allfishes, behaviors
+        global allcarnosaurs, behaviors
 
         global allcarcasses, carcass_behaviors
 
@@ -1668,19 +1301,10 @@ class Prey(object):
 
         state = {}
 
-        # print"[ prey state ]")
-
-        # printallprey)
 
         for prey in allprey:
-            # print"\n[ preys ]")
-            # printprey)
-            # printprey_behaviors)
 
             for prey_behavior in prey_behaviors:
-                # printprey_behavior.__dict__)
-                # print"[ prey behaviors 1xx ]")
-
                 prey_behavior.setup(self, state)
                 prey_behavior.draw(self,state)
 
@@ -1690,28 +1314,18 @@ class Prey(object):
 
 
     def draw(self):
-        print("draw 1715")
-        # sys.exit()
+
         pushMatrix()
-        # print"draw 1636")
-        print(self.preycolor)
 
         translate(*self.position)
-        # rotate(self.direction)
+ 
 
         stroke(self.preycolor)
         noFill()
 
-        print("[ drawing from scratch ]")
-
         lengt = self.energy/2000
-        # printlengt)
         lengt = lengt*20
-        # printlengt)
         line(0,0, lengt,0)
-        # print"line")
-
-        # arc(0,0, 15,0, -5,PI*2)
 
         line(3.5,8.366,1.7,9.566)
         line(4.1,7.4,3.5,8.366)
@@ -1785,8 +1399,5 @@ class Prey(object):
 
 
         popMatrix()
-        print("drawn!")
-        print(self.__dict__)
-        # sys.exit()
 
 setup()
